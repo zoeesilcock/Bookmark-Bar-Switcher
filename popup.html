@@ -1,0 +1,138 @@
+<html>
+	<head>
+		<link type="text/css" rel="stylesheet" href="style.css" />
+		<script type="text/javascript" src="jquery-1.4.4.min.js"></script>
+		<script>
+			var bookmarkBars = [];
+
+			$(function() {
+				populate();
+			});
+
+			/**
+			 * As the name suggests this function populates the view with the
+			 * available bookmark bars. It highlights the one thats is in use.
+			 **/
+			function populate() {
+				// Get the latest data from the background page.
+				var currentBB = chrome.extension.getBackgroundPage().getCurrentBB();
+				bookmarkBars = chrome.extension.getBackgroundPage().getBars();
+
+				// Empty the list.
+				$("#popup_list").empty();
+
+				// Build an array with the new list items.
+				var ulItems = [];
+				$.each(bookmarkBars, function(i, item) {
+					if(item == currentBB) {
+						ulItems.push('<li class="current">' + item + '</li>');
+					} else {
+						ulItems.push('<li onclick="selectBookmarkBar(\'' + item + '\')">' + item + '</li>');
+					}
+				});
+
+				// Join the array of list items and add them to the html.
+				$("#popup_list").append(ulItems.join(""));
+			}
+
+			/**
+			 * Handles the new bookmark bar form by taking the name and calling the 
+			 * newBar() method on the background page. If no name was provided an 
+			 * error is displayed. The newBar() method will return an error if
+			 * the name is taken. For the sake of simplicity newBar() returns an 
+			 * error string if something went wrong and null otherwise.
+			 **/
+			function createBar() {
+				var name = $("#barName").val();
+
+				if(name.length > 0) {
+					var result = chrome.extension.getBackgroundPage().newBar(name);
+
+					if(result != null) {
+						showError(result);
+					} else {
+						populate();	
+						hidePopup();
+					}
+				} else {
+					showError("Please provide a name.");
+				}
+			}
+
+			/**
+			 * Convenience method which closes the popup and hides the nameForm and
+			 * error area. I believe both these areas get returned to hidden
+			 * automatically next time the popup is opened. But this way we can
+			 * be sure that both the name field and the error div are empty.
+			 **/
+			function hidePopup() {
+				javascript:window.close();
+				hideError();
+				hideNameForm();
+			}
+
+			/**
+			 * Shows the error area with the specified message.
+			 **/
+			function showError(message) {
+				$("#error").empty();
+				$("#error").append(message);
+				$("#error").show();
+			}
+
+			/**
+			 * Hides the error area.
+			 **/
+			function hideError() {
+				$("#error").empty();
+				$("#error").hide();
+			}
+
+			/**
+			 * Shows the new bookmark bar form.
+			 **/
+			function showNameForm() {
+				$("#barNameDiv").show();
+				$("#barName").focus();
+			}
+
+			/**
+			 * Hides and resets the new bookmark bar form.
+			 **/
+			function hideNameForm() {
+				$("#barNameDiv").hide();			
+				$("#barName").val("");
+			}
+
+			/**
+			 * Tells the background page to switch to the specified bookmark bar.
+			 **/
+			function selectBookmarkBar(bar) {
+				chrome.extension.getBackgroundPage().selectBar(bar);
+				hidePopup();
+			}
+
+			function clearBookmarkBars() {
+				chrome.extension.getBackgroundPage().clearStorage();
+				hidePopup();
+			}
+
+		</script>	
+	</head>
+	<body>
+		<ul id="popup_list">
+		</ul>
+		<div id="barNameDiv">
+			<form id="barNameForm">
+				<label for="barName">Name:</label>
+				<input type="text" size="10" id="barName" />
+				<input type="button" value="Cancel" onclick="hidePopup()" />
+				<input type="button" value="OK" onclick="createBar()" />
+			</form>
+		</div>
+		<div id="error"></div>
+		<ul id="command_list">
+			<li onclick="showNameForm()">New bar</li>
+		</ul>
+	</body>
+</html>

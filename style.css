@@ -1,0 +1,44 @@
+body {
+	font-family: arial;
+	font-size: 11pt;
+	padding: 0px;
+	margin: 0px;
+	/*width: 130px;*/
+}
+
+ul#popup_list, ul#command_list {
+	list-style-type: none;
+	padding: 0px;
+	margin: 10px;
+}
+
+ul#popup_list li, ul#command_list li {
+	cursor: default;
+	padding: 2px;
+	white-space: nowrap;
+}
+
+ul#popup_list li.current {
+	font-weight: bold;
+}
+
+ul#popup_list li:hover, ul#command_list li:hover {
+	background-color: #eee;
+}
+
+#barNameDiv {
+	display: none;
+	margin: 10px;
+}
+
+#barName {
+	width: 110px;
+}
+
+div#error {
+	display: none;
+	background-color: #ff0;
+	font-weight: bold;
+	font-size: 10pt;
+	margin: 4px;
+}
