@@ -1,21 +1,17 @@
 <html>
 	<head>
 		<link type="text/css" rel="stylesheet" href="style.css" />
-		<script type="text/javascript" src="jquery-1.4.4.min.js"></script>
 		<script>
-			$(function() {
+			function initView() {
 				// Request the data from the background page.
 				chrome.extension.getBackgroundPage().loadData(populate);
-			});
+			}
 
 			/**
 			 * As the name suggests this function populates the view with the
 			 * available bookmark bars. It highlights the one thats is in use.
 			 **/
 			function populate(bookmarkBars, currentBB) {
-				// Empty the list.
-				$("#popup_list").empty();
-
 				// Build an array with the new list items.
 				var ulItems = [];
 				bookmarkBars.forEach(function(item) {
@@ -26,8 +22,8 @@
 					}
 				});
 
-				// Join the array of list items and add them to the html.
-				$("#popup_list").append(ulItems.join(""));
+				var list = document.getElementById("popup_list");
+				list.innerHTML = ulItems.join("");
 			}
 
 			/**
@@ -38,20 +34,26 @@
 			 * error string if something went wrong and null otherwise.
 			 **/
 			function createBar() {
-				var name = $("#barName").val();
+				var name = document.getElementById("barName").value;
 
 				if(name.indexOf(":") != -1) {
 					showError("The name can't contain a colon (:).");
 				} else if(name.length > 0) {
-					var result = chrome.extension.getBackgroundPage().newBar(name);
-
-					if(result != null) {
-						showError(result);
-					} else {
-						hidePopup();
-					}
+					chrome.extension.getBackgroundPage().newBar(name, barCreated);
 				} else {
 					showError("Please provide a name.");
+				}
+			}
+
+			/**
+			 * Receives the result of creating a new bookmark bar. If there was an
+			 * error it will receive a string to display, otherwise it will be null.
+			 **/
+			function barCreated(message) {
+				if(message != null) {
+					showError(message);
+				} else {
+					hidePopup();
 				}
 			}
 
@@ -66,17 +68,19 @@
 			 * Shows the error area with the specified message.
 			 **/
 			function showError(message) {
-				$("#error").empty();
-				$("#error").append(message);
-				$("#error").show();
+				var errorField = document.getElementById("error");
+				errorField.innerHTML = message;
+				errorField.style.display = "block";
 			}
 
 			/**
 			 * Shows the new bookmark bar form.
 			 **/
 			function showNameForm() {
-				$("#barNameDiv").show();
-				$("#barName").focus();
+				var nameFormDiv = document.getElementById("barNameDiv");
+				nameFormDiv.style.display = "block";
+
+				document.getElementById("barName").focus();
 			}
 
 			/**
@@ -88,8 +92,11 @@
 			}
 		</script>	
 	</head>
-	<body>
+	<body onload="initView()">
 		<ul id="popup_list">
+		</ul>
+		<ul id="command_list">
+			<li onclick="showNameForm(); this.className += ' current';">New bar</li>	
 		</ul>
 		<div id="barNameDiv">
 			<form id="barNameForm" onsubmit="createBar()">
@@ -100,8 +107,5 @@
 			</form>
 		</div>
 		<div id="error"></div>
-		<ul id="command_list">
-			<li onclick="showNameForm()">New bar</li>	
-		</ul>
 	</body>
 </html>

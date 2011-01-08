@@ -9,21 +9,29 @@ body {
 ul#popup_list, ul#command_list {
 	list-style-type: none;
 	padding: 0px;
-	margin: 10px;
+	margin: 0px;
+}
+
+ul#command_list {
+	margin-top: 10px;
 }
 
 ul#popup_list li, ul#command_list li {
 	cursor: default;
-	padding: 2px;
+	padding: 5px 10px;
 	white-space: nowrap;
 }
 
-ul#popup_list li.current {
+ul#popup_list li.current, ul#command_list li.current {
 	font-weight: bold;
 }
 
 ul#popup_list li:hover, ul#command_list li:hover {
 	background-color: #eee;
+}
+
+ul#popup_list li.current:hover, ul#command_list li.current:hover {
+	background: none;
 }
 
 #barNameDiv {

@@ -171,31 +171,30 @@ function selectBar(name) {
  * Creates a new bookmark bar by the name specified. It will check that the
  * name isn't already taken and if not create a storage folder for it. 
  **/
-function newBar(name) {
-	var result;
+function newBar(name, createdCallback) {
+	chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
+		var storageFound = false;
+		var result;
 
-	if(jQuery.inArray(name, bookmarkBars) == -1) {
-		chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
-			var storageFound = false;
-
-			// Since a folder can have been created since we last loaded the
-			// data lets check so we don't create a duplicate folder.
-			folders.forEach(function(folder) {
-				if(folder.title == name) {
-					storageFound = true;
-				}
-			});
-
-			if(!storageFound) {
-				// The storage folder wasn't found, good, create one.
-				chrome.bookmarks.create({parentId: bookmarkBarsId, title: name});
+		// Lets make sure this name isn't in use already.
+		folders.forEach(function(folder) {
+			if(folder.title == name) {
+				storageFound = true;
 			}
 		});
-	} else {
-		result = "This name is taken.";
-	}
 
-	return result;
+		if(!storageFound) {
+			// The storage folder wasn't found, good, create one.
+			chrome.bookmarks.create({parentId: bookmarkBarsId, title: name});
+		} else {
+			result = "This name is taken.";
+		}
+
+		// Inform the view of howw it went.
+		if(createdCallback != null) {
+			createdCallback(result);
+		}
+	});
 }
 
 /**
