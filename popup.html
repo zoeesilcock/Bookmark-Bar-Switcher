@@ -18,7 +18,7 @@
 
 				// Build an array with the new list items.
 				var ulItems = [];
-				$.each(bookmarkBars, function(i, item) {
+				bookmarkBars.forEach(function(item) {
 					if(item == currentBB) {
 						ulItems.push('<li class="current">' + item + '</li>');
 					} else {
@@ -48,7 +48,6 @@
 					if(result != null) {
 						showError(result);
 					} else {
-						populate();	
 						hidePopup();
 					}
 				} else {
@@ -57,15 +56,10 @@
 			}
 
 			/**
-			 * Convenience method which closes the popup and hides the nameForm and
-			 * error area. I believe both these areas get returned to hidden
-			 * automatically next time the popup is opened. But this way we can
-			 * be sure that both the name field and the error div are empty.
+			 * Convenience method which closes the popup. 
 			 **/
 			function hidePopup() {
 				javascript:window.close();
-				hideError();
-				hideNameForm();
 			}
 
 			/**
@@ -78,27 +72,11 @@
 			}
 
 			/**
-			 * Hides the error area.
-			 **/
-			function hideError() {
-				$("#error").empty();
-				$("#error").hide();
-			}
-
-			/**
 			 * Shows the new bookmark bar form.
 			 **/
 			function showNameForm() {
 				$("#barNameDiv").show();
 				$("#barName").focus();
-			}
-
-			/**
-			 * Hides and resets the new bookmark bar form.
-			 **/
-			function hideNameForm() {
-				$("#barNameDiv").hide();			
-				$("#barName").val("");
 			}
 
 			/**
@@ -114,7 +92,7 @@
 		<ul id="popup_list">
 		</ul>
 		<div id="barNameDiv">
-			<form id="barNameForm">
+			<form id="barNameForm" onsubmit="createBar()">
 				<label for="barName">Name:</label>
 				<input type="text" size="10" id="barName" />
 				<input type="button" value="Cancel" onclick="hidePopup()" />

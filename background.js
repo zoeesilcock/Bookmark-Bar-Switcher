@@ -23,14 +23,6 @@ var currentBarId;      // The bookmark holding the name of the current bar.
 var loggingEnabled = true;
 
 /**
- * This starts of the initialization process for the extension. It calls
- * initData() which makes sure we have all the necessare data in place.
- **/
-$(function() {
-	initData();	
-});
-
-/**
  * Here we prepare the bookmark folders we need to do our job. It will first
  * find the id of the Other Bookmarks folder and save it (seriously google,
  * fix this). Next it will look for the BookmarksBars folder which contains
@@ -39,12 +31,12 @@ $(function() {
  **/
 function initData() {
 	chrome.bookmarks.getTree(function(bookmarks) {
-		$.each(bookmarks[0].children, function(i, item) {
+		bookmarks[0].children.forEach(function(item) {
 			if(item.title == "Other Bookmarks") {
 				// Save the bookmark root object for future reference.
 				otherBookmarksId = item.id;
 
-				$.each(item.children, function(index, subitem) {
+				item.children.forEach(function(subitem) {
 				 	if(subitem.title == "BookmarkBars") {
 						// Found the BookmarkBars folder, save the id.
 						bookmarkBarsId = subitem.id;
@@ -86,7 +78,7 @@ function loadData(populateView) {
 
 	// Get a list of items in the "BookmarkBars" folder and go through them.
 	chrome.bookmarks.getChildren(bookmarkBarsId, function(items) {
-		$.each(items, function(index, item) {
+		items.forEach(function(item) {
 			if(item.title.indexOf("CurrentBB:") != -1) {
 				// This is the CurrentBB:* bookmark, extract the name.
 				currentBB = item.title.split(":")[1];
@@ -144,12 +136,12 @@ function selectBar(name) {
 
 		chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
 			// Go through the bookmark storage folders.
-			$.each(folders, function(index, folder) {
+			folders.forEach(function(folder) {
 				if(folder.title == current) {
 					// We have found the storage folder for the current bar.
 					// Move every bookmark in the bar to it's storage folder.
 					chrome.bookmarks.getChildren(bookmarkBarId, function(items) {
-						$.each(items, function(i, item) {
+						items.forEach(function(item) {
 							chrome.bookmarks.move(item.id, {parentId: folder.id});
 						});
 					});
@@ -157,12 +149,12 @@ function selectBar(name) {
 			});
 
 			// Go through the bookmark storage folders.
-			$.each(folders, function(index, folder) {
+			folders.forEach(function(folder) {
 				if(folder.title == name) {
 					// We have found the storage folder for the selected bar.
 					// Move every bookmark in the storage folder to the bookmark bar.
 					chrome.bookmarks.getChildren(folder.id, function(items) {
-						$.each(items, function(i, item) {
+						items.forEach(function(item) {
 							chrome.bookmarks.move(item.id, {parentId: bookmarkBarId});
 						});
 					});
@@ -188,7 +180,7 @@ function newBar(name) {
 
 			// Since a folder can have been created since we last loaded the
 			// data lets check so we don't create a duplicate folder.
-			$.each(folders, function(index, folder) {
+			folders.forEach(function(folder) {
 				if(folder.title == name) {
 					storageFound = true;
 				}
