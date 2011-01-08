@@ -33,7 +33,7 @@ var loggingEnabled = true;
 function initData() {
 	chrome.bookmarks.getTree(function(bookmarks) {
 		bookmarks[0].children.forEach(function(item) {
-			if(item.title == "Other Bookmarks") {
+			if(item.title.toLowerCase() == "other bookmarks" && item.parentId == 0) {
 				// Save the bookmark root object for future reference.
 				otherBookmarksId = item.id;
 
@@ -43,7 +43,7 @@ function initData() {
 						bookmarkBarsId = subitem.id;
 					}
 				});
-			} else if(item.title == "Bookmarks Bar") {
+			} else if(item.title.toLowerCase() == "bookmarks bar" && item.parentId == 0) {
 				// Save the Bookmark Bar object, not to be confused with BookmarkBars.
 				bookmarkBarId = item.id;
 			}
