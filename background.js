@@ -10,6 +10,7 @@
  * The name of the currently selected bookmark bar.
  **/
 var currentBB;
+var bookmarkBars;
 
 /**
  * The IDs to important bookmark folders.
@@ -17,16 +18,16 @@ var currentBB;
 var otherBookmarksId;  // Shouldn't be needed, come on Google.
 var bookmarkBarId;     // Shouldn't be needed, come on Google.
 var bookmarkBarsId;    // The root of our bookmark storage folder.
+var currentBarId;      // The bookmark holding the name of the current bar.
 
 var loggingEnabled = true;
 
 /**
  * This starts of the initialization process for the extension. It calls
- * initMetaData() which in it's turn calls initData(). Together these make
- * sure the extension has everything it needs to function.
+ * initData() which makes sure we have all the necessare data in place.
  **/
 $(function() {
-	initMetaData();	
+	initData();	
 });
 
 /**
@@ -34,12 +35,9 @@ $(function() {
  * find the id of the Other Bookmarks folder and save it (seriously google,
  * fix this). Next it will look for the BookmarksBars folder which contains
  * our meta data and the actual bookmark bars. If it doesn't find one it will
- * create one. Finally it calls initData() which will enter default values
- * if none are found. The reason we call it from here is because this
- * function must have finished before initData() can be run since it uses
- * the bookmarkBarsId.
+ * create one.
  **/
-function initMetaData() {
+function initData() {
 	chrome.bookmarks.getTree(function(bookmarks) {
 		$.each(bookmarks[0].children, function(i, item) {
 			if(item.title == "Other Bookmarks") {
@@ -63,38 +61,68 @@ function initMetaData() {
 			chrome.bookmarks.create({parentId: otherBookmarksId,
 				title: "BookmarkBars"}, function(result) {
 					bookmarkBarsId = result.id;
-					initData();
+
+					// Since we didn't even have a BookmarkBars folder there can't
+					// be any storage folders either, make one for the default bar.
+					newBar("Default");
 			});
-		} else {
-			initData();
 		}
 	});
 }
 
 /**
- * This function initializes both of our storages. Firstly we will check
- * the localStorage to see if we have an array of bookmark bar names saved
- * and if not we will add an array that only contains the default bar.
- * Secondly we will check the bookmark based meta data which we need to
- * support bookmark synchers. Same thing there, save the default name if
- * the meta data is empty.
+ * Loads all the information about bookmark bars that we have saved. It
+ * grabs all the children of the "BookmarkBars" folder and steps through them.
+ * It adds all the folder names to the list of bookmark bars and extracts
+ * the name of the current bar from the "CurrentBB:*" bookmark. This method
+ * is called by the popup and it passes the populate function as the argument.
+ * This allows us to update the view once the asynchronous calls to 
+ * google.bookmarks have ended.
  **/
-function initData() {
-	var bars = getBars();
+function loadData(populateView) {
+	// Clear the current data.
+	currentBB = null;
+	bookmarkBars = [];
 
-	if(bars == null || bars.length == 0) {
-		// No bookmark bars found in the localStorage, lets create the default bar.
-		newBar("Default");
-	}
-	
-	loadMetaData();
+	// Get a list of items in the "BookmarkBars" folder and go through them.
+	chrome.bookmarks.getChildren(bookmarkBarsId, function(items) {
+		$.each(items, function(index, item) {
+			if(item.title.indexOf("CurrentBB:") != -1) {
+				// This is the CurrentBB:* bookmark, extract the name.
+				currentBB = item.title.split(":")[1];
+				currentBarId = item.id;
+			} else if(item.url == null) {
+				// This is a bookmark bar storage folder, add it to the list of bars.
+				bookmarkBars.push(item.title);
+			}
+		});
+
+		if(currentBarId == null) {
+			// The CurrentBB:* bookmark wasn't found, lets create it.
+			chrome.bookmarks.create({parentId: bookmarkBarsId,
+				title: "CurrentBB:Default", url: "http://zoeetrope.com/en/bookmarbar"}, 
+				function(result) {
+				currentBB = "Default";
+				currentBarId = result.id;
+
+				if(populateView != null) {
+					populateView(bookmarkBars, currentBB);
+				}
+			});
+		} else if(populateView != null) {
+			populateView(bookmarkBars, currentBB);
+		}
+	});
 }
 
 /**
- * A simple getter so the view can know which bookmark bar to highlight.
+ * Changes the CurrentBB:* bookmark to contain the specified name instead.
+ * It also updates the global variable where we keep the current bookmark
+ * bar's name.
  **/
-function getCurrentBB() {
-	return currentBB;
+function setCurrentBB(name) {
+	chrome.bookmarks.update(currentBarId, {title: "CurrentBB:" + name});
+	currentBB = name;
 }
 
 /**
@@ -108,57 +136,69 @@ function getCurrentBB() {
  * Note that due to the asynchronous nature of the chrome api we will in fact
  * update the meta data before the rest of the function is done.
  **/
-function selectBar(bar) {
-	// Store the name of the current bar since setMetaData will change it
-	// before we need it when moving out the old bookmarks.
-	var current = currentBB;
+function selectBar(name) {
+	if(name != currentBB) {
+		// Store the name of the current bar since setMetaData will change it
+		// before we need it when moving out the old bookmarks.
+		var current = currentBB;
 
-	chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
-		// Go through the bookmark storage folders.
-		$.each(folders, function(index, folder) {
-			if(folder.title == current) {
-				// We have found the storage folder for the current bar.
-				// Move every bookmark in the bar to it's storage folder.
-				chrome.bookmarks.getChildren(bookmarkBarId, function(items) {
-					$.each(items, function(i, item) {
-						chrome.bookmarks.move(item.id, {parentId: folder.id});
+		chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
+			// Go through the bookmark storage folders.
+			$.each(folders, function(index, folder) {
+				if(folder.title == current) {
+					// We have found the storage folder for the current bar.
+					// Move every bookmark in the bar to it's storage folder.
+					chrome.bookmarks.getChildren(bookmarkBarId, function(items) {
+						$.each(items, function(i, item) {
+							chrome.bookmarks.move(item.id, {parentId: folder.id});
+						});
 					});
-				});
-			}
+				}
+			});
+
+			// Go through the bookmark storage folders.
+			$.each(folders, function(index, folder) {
+				if(folder.title == name) {
+					// We have found the storage folder for the selected bar.
+					// Move every bookmark in the storage folder to the bookmark bar.
+					chrome.bookmarks.getChildren(folder.id, function(items) {
+						$.each(items, function(i, item) {
+							chrome.bookmarks.move(item.id, {parentId: bookmarkBarId});
+						});
+					});
+				}
+			});
 		});
 
-		// Go through the bookmark storage folders.
-		$.each(folders, function(index, folder) {
-			if(folder.title == bar) {
-				// We have found the storage folder for the selected bar.
-				// Move every bookmark in the storage folder to the bookmark bar.
-				chrome.bookmarks.getChildren(folder.id, function(items) {
-					$.each(items, function(i, item) {
-						chrome.bookmarks.move(item.id, {parentId: bookmarkBarId});
-					});
-				});
-			}
-		});
-	});
-
-	// Update the meta data so we are compatible with bookmark synchers.
-	setMetaData(bar);
+		// Update the current bookmark bar meta data.
+		setCurrentBB(name);
+	}
 }
 
 /**
  * Creates a new bookmark bar by the name specified. It will check that the
- * name isn't already taken and if not add it to the localStorage and
- * create a storage folder for it.
+ * name isn't already taken and if not create a storage folder for it. 
  **/
 function newBar(name) {
-	var bars = getBars();
 	var result;
 
-	if(jQuery.inArray(name, bars) == -1) {
-		bars.push(name);
-		saveBars(bars);
+	if(jQuery.inArray(name, bookmarkBars) == -1) {
+		chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
+			var storageFound = false;
 
-		chrome.bookmarks.create({parentId: bookmarkBarsId, title: name});
+			// Since a folder can have been created since we last loaded the
+			// data lets check so we don't create a duplicate folder.
+			$.each(folders, function(index, folder) {
+				if(folder.title == name) {
+					storageFound = true;
+				}
+			});
+
+			if(!storageFound) {
+				// The storage folder wasn't found, good, create one.
+				chrome.bookmarks.create({parentId: bookmarkBarsId, title: name});
+			}
+		});
 	} else {
 		result = "This name is taken.";
 	}
@@ -167,94 +207,11 @@ function newBar(name) {
 }
 
 /**
- * Load the array which contains a list of bookmark bar names from the
- * html 5 localStorage. The array is stored as a serialized string with
- * semicolon separators. If no array is found we just return an empty array.
+ * Simple logging function which outputs debug information to the console
+ * if the loggingEnabled global boolean is set to true.
  **/
-function getBars() {
-	var bars;
-
-	try {
-		bars = window.localStorage.getItem("bookmarkBars");
-
-		if(bars != null) {
-			bars = bars.split(";");
-		} else {
-			bars = [];
-		}
-	} catch(e) {
-		log("getBars(); " + bars);
-		log(e);
-
-		bars = [];
-	}
-	
-	return bars;
-}
-
-/**
- * Saves the array of bookmark bar names as a string in the html 5 localStorage.
- * The array is serialized with a semicolon separator.
- **/
-function saveBars(bars) {
-	try {
-		window.localStorage.removeItem("bookmarkBars");
-		window.localStorage.setItem("bookmarkBars", bars.join(";"));
-	} catch(e) {
-		log("saveBars();");
-		log(e);
-	}
-}
-
-/**
- * Load the meta data from the bookmarks. If no meta data is saved we can
- * assume that this is the first time BBS has been run on this browser
- * and create meta data containing the default name. The reason we create
- * a bookmark containing the default meta data here instead of in the calling
- * function is because we can't return the value of currentBB. Instead we 
- * have to use a global variable which makes the process asynchronous forcing
- * us to have the logic for handling non-existent meta data here.
- **/
-function loadMetaData() {
-	chrome.bookmarks.search("CurrentBB:", function(results) {
-		if(results.length == 0) {
-			// No meta data found, save the default name.
-			setMetaData("Default");
-		} else if(results.length == 1) {
-			// Load the name from the bookmark title and save it globally.
-			var temp = results[0].title;
-			currentBB = temp.split(":")[1];
-		}
-	});
-}
-
-/**
- * Saves the currently selected bookmark bar name so that the extension
- * is compatible with bookmark syncers. This way when the user syncs a
- * specific bookmark bar on one machine the other machines will also know
- * which bookmark bar it is.
- **/
-function setMetaData(name) {
-	currentBB = name;
-	
-	// Delete the current meta data if any is found.
-	chrome.bookmarks.search("CurrentBB:", function(results) {
-		if(results.length == 1) {
-			chrome.bookmarks.remove(results[0].id);
-		}
-	});
-
-	// Find the Other Bookmarks folder and add the meta data as a bookmark.
-	chrome.bookmarks.create({parentId: bookmarkBarsId,
-		title: "CurrentBB:" + currentBB, url: "http://zoeetrope.com/en/bookmarkbar_switcher"});
-}
-
 function log(message) {
 	if(loggingEnabled) {
 		console.log(message);
 	}
-}
-
-function clearStorage() {
-	window.localStorage.clear();
 }

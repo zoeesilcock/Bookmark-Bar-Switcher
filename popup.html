@@ -3,21 +3,16 @@
 		<link type="text/css" rel="stylesheet" href="style.css" />
 		<script type="text/javascript" src="jquery-1.4.4.min.js"></script>
 		<script>
-			var bookmarkBars = [];
-
 			$(function() {
-				populate();
+				// Request the data from the background page.
+				chrome.extension.getBackgroundPage().loadData(populate);
 			});
 
 			/**
 			 * As the name suggests this function populates the view with the
 			 * available bookmark bars. It highlights the one thats is in use.
 			 **/
-			function populate() {
-				// Get the latest data from the background page.
-				var currentBB = chrome.extension.getBackgroundPage().getCurrentBB();
-				bookmarkBars = chrome.extension.getBackgroundPage().getBars();
-
+			function populate(bookmarkBars, currentBB) {
 				// Empty the list.
 				$("#popup_list").empty();
 
@@ -45,7 +40,9 @@
 			function createBar() {
 				var name = $("#barName").val();
 
-				if(name.length > 0) {
+				if(name.indexOf(":") != -1) {
+					showError("The name can't contain a colon (:).");
+				} else if(name.length > 0) {
 					var result = chrome.extension.getBackgroundPage().newBar(name);
 
 					if(result != null) {
@@ -111,12 +108,6 @@
 				chrome.extension.getBackgroundPage().selectBar(bar);
 				hidePopup();
 			}
-
-			function clearBookmarkBars() {
-				chrome.extension.getBackgroundPage().clearStorage();
-				hidePopup();
-			}
-
 		</script>	
 	</head>
 	<body>
@@ -132,7 +123,7 @@
 		</div>
 		<div id="error"></div>
 		<ul id="command_list">
-			<li onclick="showNameForm()">New bar</li>
+			<li onclick="showNameForm()">New bar</li>	
 		</ul>
 	</body>
 </html>
