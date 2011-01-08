@@ -93,11 +93,14 @@
 		</script>	
 	</head>
 	<body onload="initView()">
+
 		<ul id="popup_list">
 		</ul>
+
 		<ul id="command_list">
 			<li onclick="showNameForm(); this.className += ' current';">New bar</li>	
 		</ul>
+
 		<div id="barNameDiv">
 			<form id="barNameForm" onsubmit="createBar()">
 				<label for="barName">Name:</label>
@@ -106,6 +109,8 @@
 				<input type="button" value="OK" onclick="createBar()" />
 			</form>
 		</div>
+
 		<div id="error"></div>
+
 	</body>
 </html>

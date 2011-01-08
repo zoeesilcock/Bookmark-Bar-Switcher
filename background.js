@@ -10,7 +10,6 @@
  * The name of the currently selected bookmark bar.
  **/
 var currentBB;
-var bookmarkBars;
 
 /**
  * The IDs to important bookmark folders.
@@ -28,6 +27,8 @@ var loggingEnabled = true;
  * fix this). Next it will look for the BookmarksBars folder which contains
  * our meta data and the actual bookmark bars. If it doesn't find one it will
  * create one.
+ *
+ * This is called in the onload event of the background page body.
  **/
 function initData() {
 	chrome.bookmarks.getTree(function(bookmarks) {
@@ -74,7 +75,7 @@ function initData() {
 function loadData(populateView) {
 	// Clear the current data.
 	currentBB = null;
-	bookmarkBars = [];
+	var bookmarkBars = [];
 
 	// Get a list of items in the "BookmarkBars" folder and go through them.
 	chrome.bookmarks.getChildren(bookmarkBarsId, function(items) {
