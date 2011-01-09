@@ -32,34 +32,31 @@ var loggingEnabled = true;
  **/
 function initData() {
 	chrome.bookmarks.getTree(function(bookmarks) {
-		bookmarks[0].children.forEach(function(item) {
-			if(item.title.toLowerCase() == "other bookmarks" && item.parentId == 0) {
-				// Save the bookmark root object for future reference.
-				otherBookmarksId = item.id;
+		// Get the ids for the two root folders.
+		otherBookmarksId = bookmarks[0].children[1].id;
+		bookmarkBarId = bookmarks[0].children[0].id;
 
-				item.children.forEach(function(subitem) {
-				 	if(subitem.title == "BookmarkBars") {
-						// Found the BookmarkBars folder, save the id.
-						bookmarkBarsId = subitem.id;
-					}
-				});
-			} else if(item.title.toLowerCase() == "bookmarks bar" && item.parentId == 0) {
-				// Save the Bookmark Bar object, not to be confused with BookmarkBars.
-				bookmarkBarId = item.id;
+		// Look for our storage folder and create one if it isn't there.
+		chrome.bookmarks.getChildren(otherBookmarksId, function(children) {
+			children.forEach(function(item) {
+				if(item.title == "BookmarkBars") {
+					// Found the BookmarkBars folder, save the id.
+					bookmarkBarsId = item.id;
+				}
+			});
+
+			if(bookmarkBarsId == null) {
+				// No BookmarkBars folder was found, create it.
+				chrome.bookmarks.create({parentId: otherBookmarksId,
+					title: "BookmarkBars"}, function(result) {
+						bookmarkBarsId = result.id;
+
+						// Since we didn't even have a BookmarkBars folder there can't
+						// be any storage folders either, make one for the default bar.
+						newBar("Default");
+					});
 			}
 		});
-
-		if(bookmarkBarsId == null) {
-			// No BookmarkBars folder was found, create it.
-			chrome.bookmarks.create({parentId: otherBookmarksId,
-				title: "BookmarkBars"}, function(result) {
-					bookmarkBarsId = result.id;
-
-					// Since we didn't even have a BookmarkBars folder there can't
-					// be any storage folders either, make one for the default bar.
-					newBar("Default");
-			});
-		}
 	});
 }
 
