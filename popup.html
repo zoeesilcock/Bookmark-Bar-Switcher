@@ -90,6 +90,17 @@
 				chrome.extension.getBackgroundPage().selectBar(bar);
 				hidePopup();
 			}
+
+			/**
+			 * Opens the bookmark manager allowing the user to edit the names, 
+			 * order and content of the bookmark bars. Hopefully we can link
+		   * directly to the BookmarkBars folder in the future.
+			 **/
+			function manageBars() {
+				chrome.tabs.create({
+					url: "chrome://bookmarks/"
+				});
+			}
 		</script>	
 	</head>
 	<body onload="initView()">
@@ -98,6 +109,7 @@
 		</ul>
 
 		<ul id="command_list">
+			<li onclick="manageBars();">Manage bars</li>
 			<li onclick="showNameForm(); this.className += ' current';">New bar</li>	
 		</ul>
 
@@ -105,8 +117,8 @@
 			<form id="barNameForm" onsubmit="createBar()">
 				<label for="barName">Name:</label>
 				<input type="text" size="10" id="barName" />
-				<input type="button" value="Cancel" onclick="hidePopup()" />
-				<input type="button" value="OK" onclick="createBar()" />
+				<input type="button" value="Cancel" onclick="hidePopup();" />
+				<input type="button" value="OK" onclick="createBar();" />
 			</form>
 		</div>
 

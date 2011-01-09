@@ -191,7 +191,7 @@ function newBar(name, createdCallback) {
 			result = "This name is taken.";
 		}
 
-		// Inform the view of howw it went.
+		// Inform the view of how it went.
 		if(createdCallback != null) {
 			createdCallback(result);
 		}

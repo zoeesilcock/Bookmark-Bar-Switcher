@@ -1,24 +1,33 @@
+html {
+	padding: 0px;
+	margin: 0px;
+}
+
 body {
 	font-family: arial;
 	font-size: 11pt;
 	padding: 0px;
 	margin: 0px;
-	/*width: 130px;*/
+	display: block;
 }
 
 ul#popup_list, ul#command_list {
 	list-style-type: none;
-	padding: 0px;
-	margin: 0px;
+	padding: 10px;
+	margin: 0px
 }
 
 ul#command_list {
-	margin-top: 10px;
+	border-top: 1px solid #eee;
+}
+
+ul#command_list {
+	border-top: 1px solid #ee;
 }
 
 ul#popup_list li, ul#command_list li {
 	cursor: default;
-	padding: 5px 10px;
+	padding: 2px 5px;
 	white-space: nowrap;
 }
 
