@@ -1,5 +1,24 @@
 /**
- * The model section of the bookmark bar switcher extension. This is where
+ * Copyright 2011 Zoee Silcock (zoeetrope.com)
+ * 
+ * This file is part of Bookmark Bar Switcher.
+ * 
+ * Bookmark Bar Switcher is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Bookmark Bar Switcher is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Bookmark Bar Switcher. If not, see <http://www.gnu.org/licenses/>.
+ **/
+
+/**
+ * The model section of the Bookmark Bar Switcher extension. This is where
  * we do the real work. We are mainly dealing with data storage and shuffling
  * bookmarks back and forth.
  *
