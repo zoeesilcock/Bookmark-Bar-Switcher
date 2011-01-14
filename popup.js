@@ -59,21 +59,13 @@ function populate(bookmarkBars, currentBB) {
 
 /**
  * Handles the new bookmark bar form by taking the name and calling the 
- * newBar() method on the background page. If no name was provided an 
- * error is displayed. The newBar() method will return an error if
- * the name is taken. For the sake of simplicity newBar() returns an 
- * error string if something went wrong and null otherwise.
+ * createBar() method on the background page. The result of the call will
+ * be reported back to the callback, in this case the barCreated() method. 
  **/
-function createBar() {
+function newBar() {
 	var name = document.getElementById("barName").value;
 
-	if(name.indexOf(":") != -1) {
-		showError("The name can't contain a colon (:).");
-		} else if(name.length > 0) {
-		chrome.extension.getBackgroundPage().newBar(name, barCreated);
-		} else {
-		showError("Please provide a name.");
-	}
+	chrome.extension.getBackgroundPage().createBar(name, barCreated);
 }
 
 /**
@@ -83,7 +75,7 @@ function createBar() {
 function barCreated(message) {
 	if(message != null) {
 		showError(message);
-		} else {
+	} else {
 		hidePopup();
 	}
 }
@@ -112,6 +104,20 @@ function showNameForm() {
 	nameFormDiv.style.display = "block";
 
 	document.getElementById("barName").focus();
+}
+
+/**
+ * This method is hooked up to the onkeydown event on the banName text field.
+ * It checks for the enter key and calls the newBar() method to emulate
+ * a form submission.
+ **/
+function catchEnterKey() {
+	if (event.keyCode == 13) {
+		// Cancel the event to avoid the popup being closed.	
+		event.returnValue = false;
+
+		newBar();
+	}
 }
 
 /**

@@ -3,7 +3,7 @@
 		<link type="text/css" rel="stylesheet" href="style.css" />
 		<script type="text/javascript" src="popup.js"></script>
 	</head>
-	<body onload="initView()">
+	<body onload="initView();">
 
 		<ul id="popup_list">
 		</ul>
@@ -14,11 +14,11 @@
 		</ul>
 
 		<div id="barNameDiv">
-			<form id="barNameForm" onsubmit="createBar()">
+			<form id="barNameForm" onsubmit="newBar();">
 				<label for="barName">Name:</label>
-				<input type="text" size="10" id="barName" />
+				<input type="text" size="10" id="barName" onkeydown="catchEnterKey();"/>
 				<input type="button" value="Cancel" onclick="hidePopup();" />
-				<input type="button" value="OK" onclick="createBar();" />
+				<input type="button" value="OK" onclick="newBar();" />
 			</form>
 		</div>
 

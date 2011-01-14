@@ -72,7 +72,7 @@ function initData() {
 
 						// Since we didn't even have a BookmarkBars folder there can't
 						// be any storage folders either, make one for the default bar.
-						newBar("Default");
+						createBar("Default");
 					});
 			}
 		});
@@ -184,26 +184,37 @@ function moveChildrenToFolder(sourceId, destinationId) {
 }
 
 /**
+ * Checks whether the bar name is valid and throws and exception if not.
+ **/
+function validateBarName(name) {
+	if(name.indexOf(":") != -1) {
+		throw("The name can't contain a colon.");
+	} else if(name.length == 0) {
+		throw("Please provide a name.");
+	}
+}
+
+/**
  * Creates a new bookmark bar by the name specified. It will check that the
  * name isn't already taken and if not create a storage folder for it. 
  **/
-function newBar(name, createdCallback) {
+function createBar(name, createdCallback) {
 	chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
-		var storageFound = false;
 		var result;
 
-		// Lets make sure this name isn't in use already.
-		folders.forEach(function(folder) {
-			if(folder.title == name) {
-				storageFound = true;
-			}
-		});
+		try {
+			validateBarName(name);
 
-		if(!storageFound) {
-			// The storage folder wasn't found, good, create one.
+			// Lets make sure this name isn't in use already.
+			folders.forEach(function(folder) {
+				if(folder.title == name) {
+					throw("This name is taken.");
+				}
+			});
+
 			chrome.bookmarks.create({parentId: bookmarkBarsId, title: name});
-		} else {
-			result = "This name is taken.";
+		} catch (exception) {
+			result = exception;
 		}
 
 		// Inform the view of how it went.
