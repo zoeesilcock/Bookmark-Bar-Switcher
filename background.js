@@ -109,7 +109,7 @@ function loadData(populateView) {
 		if(currentBarId == null) {
 			// The CurrentBB:* bookmark wasn't found, lets create it.
 			chrome.bookmarks.create({parentId: bookmarkBarsId,
-				title: "CurrentBB:Default", url: "http://zoeetrope.com/en/bookmarbar"}, 
+				title: "CurrentBB:Default", url: "http://zoeetrope.com/en/bbs"}, 
 				function(result) {
 				currentBB = "Default";
 				currentBarId = result.id;
@@ -151,30 +151,18 @@ function selectBar(name) {
 		// before we need it when moving out the old bookmarks.
 		var current = currentBB;
 
-		chrome.bookmarks.getChildren(bookmarkBarsId, function(folders) {
-			// Go through the bookmark storage folders.
-			folders.forEach(function(folder) {
-				if(folder.title == current) {
-					// We have found the storage folder for the current bar.
+		chrome.bookmarks.getChildren(bookmarkBarsId, function(storageFolders) {
+			storageFolders.forEach(function(storageFolder) {
+				if(storageFolder.title == current) {
 					// Move every bookmark in the bar to it's storage folder.
-					chrome.bookmarks.getChildren(bookmarkBarId, function(items) {
-						items.forEach(function(item) {
-							chrome.bookmarks.move(item.id, {parentId: folder.id});
-						});
-					});
+					moveChildrenToFolder(bookmarkBarId, storageFolder.id);
 				}
 			});
 
-			// Go through the bookmark storage folders.
-			folders.forEach(function(folder) {
-				if(folder.title == name) {
-					// We have found the storage folder for the selected bar.
+			storageFolders.forEach(function(storageFolder) {
+				if(storageFolder.title == name) {
 					// Move every bookmark in the storage folder to the bookmark bar.
-					chrome.bookmarks.getChildren(folder.id, function(items) {
-						items.forEach(function(item) {
-							chrome.bookmarks.move(item.id, {parentId: bookmarkBarId});
-						});
-					});
+					moveChildrenToFolder(storageFolder.id, bookmarkBarId);
 				}
 			});
 		});
@@ -182,6 +170,17 @@ function selectBar(name) {
 		// Update the current bookmark bar meta data.
 		setCurrentBB(name);
 	}
+}
+
+/**
+ * Moves the children of the sourceId folder to the destinationId folder.
+ **/
+function moveChildrenToFolder(sourceId, destinationId) {
+	chrome.bookmarks.getChildren(sourceId, function(items) {
+		items.forEach(function(item) {
+			chrome.bookmarks.move(item.id, {parentId: destinationId});
+		});
+	});
 }
 
 /**
