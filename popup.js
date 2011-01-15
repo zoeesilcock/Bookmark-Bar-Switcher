@@ -46,10 +46,10 @@ function populate(bookmarkBars, currentBB) {
 	// Build an array with the new list items.
 	var ulItems = [];
 	bookmarkBars.forEach(function(item) {
-		if(item == currentBB) {
-			ulItems.push('<li class="current">' + item + '</li>');
+		if(item.title == currentBB) {
+			ulItems.push('<li class="current">' + item.title + '</li>');
 			} else {
-			ulItems.push('<li onclick="selectBookmarkBar(\'' + item + '\')">' + item + '</li>');
+			ulItems.push('<li onclick="selectBookmarkBar(\'' + item.title + '\')">' + item.title + '</li>');
 		}
 	});
 

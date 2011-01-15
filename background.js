@@ -26,9 +26,16 @@
  **/
 
 /**
- * The name of the currently selected bookmark bar.
+ * The name of the currently selected bookmark bar. It is set to default
+ * since it is used to create the CurrentBB:* bookmark if none is found.
  **/
-var currentBB;
+var currentBB = "Default";
+
+/**
+ * An array containing the BookmarkTreeNode objects corresponding to our
+ * bookmark bar storage folders.
+ **/
+var bookmarkBars = [];
 
 /**
  * The IDs to important bookmark folders.
@@ -41,13 +48,20 @@ var currentBarId;      // The bookmark holding the name of the current bar.
 var loggingEnabled = true;
 
 /**
+ * This is called from the onload event of the background.html page, when
+ * the extension is loaded in other words.
+ **/
+function initialize() {
+	initData();
+	setupEventListeners();
+}
+
+/**
  * Here we prepare the bookmark folders we need to do our job. It will first
  * find the id of the Other Bookmarks folder and save it (seriously google,
  * fix this). Next it will look for the BookmarksBars folder which contains
  * our meta data and the actual bookmark bars. If it doesn't find one it will
  * create one.
- *
- * This is called in the onload event of the background page body.
  **/
 function initData() {
 	chrome.bookmarks.getTree(function(bookmarks) {
@@ -75,8 +89,19 @@ function initData() {
 						createBar("Default");
 					});
 			}
+
+			loadData();
 		});
 	});
+}
+
+/**
+ * Add listeners to the onChanged and onRemoved events so we can protect the
+ * storage structure.
+ **/
+function setupEventListeners() {
+	chrome.bookmarks.onChanged.addListener(handleBookmarkChange);
+	chrome.bookmarks.onRemoved.addListener(handleBookmarkRemove);
 }
 
 /**
@@ -86,12 +111,12 @@ function initData() {
  * the name of the current bar from the "CurrentBB:*" bookmark. This method
  * is called by the popup and it passes the populate function as the argument.
  * This allows us to update the view once the asynchronous calls to 
- * google.bookmarks have ended.
+ * google.bookmarks have ended. It is also called from the model when bookmark
+ * bar names have changed for example.
  **/
 function loadData(populateView) {
 	// Clear the current data.
-	currentBB = null;
-	var bookmarkBars = [];
+	bookmarkBars = [];
 
 	// Get a list of items in the "BookmarkBars" folder and go through them.
 	chrome.bookmarks.getChildren(bookmarkBarsId, function(items) {
@@ -102,16 +127,15 @@ function loadData(populateView) {
 				currentBarId = item.id;
 			} else if(item.url == null) {
 				// This is a bookmark bar storage folder, add it to the list of bars.
-				bookmarkBars.push(item.title);
+				bookmarkBars.push(item);
 			}
 		});
 
 		if(currentBarId == null) {
 			// The CurrentBB:* bookmark wasn't found, lets create it.
 			chrome.bookmarks.create({parentId: bookmarkBarsId,
-				title: "CurrentBB:Default", url: "http://zoeetrope.com/en/bbs"}, 
+				title: "CurrentBB:" + currentBB, url: "http://zoeetrope.com/en/bbs"}, 
 				function(result) {
-				currentBB = "Default";
 				currentBarId = result.id;
 
 				if(populateView != null) {
@@ -222,6 +246,114 @@ function createBar(name, createdCallback) {
 			createdCallback(result);
 		}
 	});
+}
+
+/**
+ * Event listener for the onChange event. This function doesn't handle the
+ * event, it simply refers to the correct method that will handle it.
+ **/
+function handleBookmarkChange(id, changeInfo) {
+	if(id == currentBarId) {
+		handleManualCurrentBBChange(id, changeInfo);
+	} else if(getStorageName(id) != null) {
+		handleManualBarNameChange(id, changeInfo);
+	}
+}
+
+/**
+ * Event listener for the onRemoved event. We use this to protect our
+ * CurrentBB:* bookmark since losing this results in various problems. 
+ * By setting the currentBarId to null we force loadData() to create one 
+ * using the currentBB global variable. This means that removing the 
+ * CurrentBB:* bookmark while the extension is running has no effect, 
+ * it is instantly recreated.
+ **/
+function handleBookmarkRemove(id, removeInfo) {
+	if(id == currentBarId) {
+		currentBarId = null;
+		loadData();
+	}
+}
+
+/**
+ * This function handles the situation when the user has edited the Current:BB*
+ * bookmark manually via the Bookmark manager. It makes sure edit is valid
+ * and switches the bookmark bar if needed. If the new title isn't valid
+ * we simply reset it to what it should be.
+ **/
+function handleManualCurrentBBChange(id, changeInfo) {
+	var parts = changeInfo.title.split(":");
+	var newName = parts[1];
+
+	if(parts[0] == "CurrentBB" && newName != currentBB 
+			&& getStorageId(newName) != null) {
+		selectBar(newName);
+	} else {
+		chrome.bookmarks.update(id, {title: "CurrentBB:" + currentBB});
+	}
+}
+
+/**
+ * This function handles the situation when the user edits one of the storage
+ * folders manually. It validates the name in a similar way to the createBar()
+ * method and updates the CurrentBB:* bookmark if it was the current bar
+ * that was changed. We also call loadData() so the bookmarkBars global array
+ * is updated. That is needed if the user makes several edits manually without
+ * opening the popup. If the new name was invalid we simply reset it.
+ **/
+function handleManualBarNameChange(id, changeInfo) {
+	var newName = changeInfo.title;
+
+	try {
+		if(bookmarkBarExists(newName)) {
+			throw "This name is taken.";
+		}
+
+		validateBarName(newName);
+
+		if(id == getStorageId(currentBB)) {
+			setCurrentBB(newName);
+		}
+
+		loadData();
+	} catch(exception) {
+		chrome.bookmarks.update(id, {title: getStorageName(id)});
+		log(exception);
+	}
+}
+
+/**
+ * Utility function which uses the bookmarkBars global array to find the id
+ * of the storage folder for the specified bookmark bar name. If no storage
+ * folder was found it returns null.
+ **/
+function getStorageId(name) {
+	var id;
+
+	bookmarkBars.forEach(function(item) {
+		if(item.title == name) {
+			id = item.id;
+		}
+	});
+
+	return id;
+}
+
+/**
+ * Utility function which uses the bookmarkBars global array to find the name
+ * of the bookmark bar whose storage folder has the specified id. If no
+ * the id isn't a storage folder it will return null.
+ **/
+function getStorageName(id) {
+	var name;
+
+	bookmarkBars.forEach(function(item) {
+		if(item.id == id) {
+			name = item.title;
+		}
+	});
+
+	return name;
 }
 
 /**
