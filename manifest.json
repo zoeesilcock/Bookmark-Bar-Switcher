@@ -1,6 +1,6 @@
 {
 	"name": "Bookmark bar switcher",
-	"version":"0.2",
+	"version":"0.3",
 	"description": "Allows you to switch between multiple bookmark bars.",
 	"icons": {
 		"16": "icon16.png",
